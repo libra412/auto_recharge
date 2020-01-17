@@ -17,10 +17,15 @@ import (
 
 var log = logrus.New()
 
-var merchantId, key, productId, wxSecret string
+var merchantId, key, productId string
 
 var isCanRequest = true
 var isQB = 0
+
+var (
+	keyBack     = "input keyevent 4"
+	inputSecret = "input text 000000"
+)
 
 //
 func main() {
@@ -72,18 +77,15 @@ func makeControl(w *ui.Window) ui.Control {
 	entryForm.SetPadded(true)
 	hbox.Append(entryForm, false)
 	// 设置发送请求按钮
-	isRequest := false
-	requestButton := ui.NewButton("开始接单")
-	entryForm.Append("", requestButton, false)
-	//
-	// choose := ui.NewCheckbox("是DNF")
-	// entryForm.Append("类型", choose, false)
-	vbox := ui.NewVerticalBox()
 	choosed := ui.NewRadioButtons()
 	choosed.Append("QB")
 	choosed.Append("DNF")
-	vbox.Append(choosed, false)
-	entryForm.Append("类型", vbox, false)
+	entryForm.Append("类型", choosed, false)
+	secretInput := ui.NewEntry()
+	entryForm.Append("输入支付密码", secretInput, false)
+	isRequest := false
+	requestButton := ui.NewButton("开始接单")
+	entryForm.Append("", requestButton, false)
 	//
 	supInput := ui.NewEntry()
 	entryForm.Append("SUP商户号", supInput, false)
@@ -92,8 +94,8 @@ func makeControl(w *ui.Window) ui.Control {
 	productIdInput := ui.NewEntry()
 	entryForm.Append("商品ID", productIdInput, false)
 
-	secretInput := ui.NewEntry()
-	entryForm.Append("输入支付密码", secretInput, false)
+	testButton := ui.NewButton("手动充值")
+	entryForm.Append("", testButton, false)
 	accountInput := ui.NewEntry()
 	entryForm.Append("输入充值账号", accountInput, false)
 	moneyInput := ui.NewEntry()
@@ -101,12 +103,10 @@ func makeControl(w *ui.Window) ui.Control {
 	orderIdInput := ui.NewEntry()
 	entryForm.Append("输入订单号", orderIdInput, false)
 
-	testButton := ui.NewButton("手动充值")
-	entryForm.Append("", testButton, false)
 	//
 	testButton.OnClicked(func(*ui.Button) {
 		account := accountInput.Text()
-		secret := secretInput.Text()
+		wxSecret := secretInput.Text()
 		money := moneyInput.Text()
 		orderId := orderIdInput.Text()
 		isQB = choosed.Selected()
@@ -114,9 +114,11 @@ func makeControl(w *ui.Window) ui.Control {
 			ui.MsgBoxError(w, "错误提示", "账号不能为空")
 			return
 		}
-		if len(secret) == 0 {
+		if len(wxSecret) == 0 {
 			ui.MsgBoxError(w, "错误提示", "密码不能为空")
 			return
+		} else {
+			inputSecret = "input text " + wxSecret
 		}
 		if len(money) == 0 {
 			ui.MsgBoxError(w, "错误提示", "金额不能为空")
@@ -125,9 +127,9 @@ func makeControl(w *ui.Window) ui.Control {
 			orderId = "123123123"
 		}
 		if isQB == 0 {
-			go rechargeQB(account, secret, money, orderId)
+			go rechargeQB(account, money, orderId)
 		} else {
-			go rechargeDNF(account, secret, money, orderId)
+			go rechargeDNF(account, money+"00", orderId)
 		}
 
 	})
@@ -144,8 +146,14 @@ func makeControl(w *ui.Window) ui.Control {
 			merchantId = supInput.Text()
 			key = supSecretInput.Text()
 			productId = productIdInput.Text()
-			wxSecret = secretInput.Text()
+			wxSecret := secretInput.Text()
 			isQB = choosed.Selected()
+			if len(wxSecret) == 0 {
+				ui.MsgBoxError(w, "错误提示", "微信密码不能为空")
+				return
+			} else {
+				inputSecret = "input text " + wxSecret
+			}
 			//
 			toolbox.StartTask()
 			requestButton.SetText("停止接单")
@@ -167,9 +175,9 @@ func f() error {
 
 				code, stateInfo := func() (string, string) {
 					if isQB == 0 {
-						return rechargeQB(data[i].TargetAccount, wxSecret, strconv.Itoa(data[i].BuyAmount*100), strconv.Itoa(data[i].TradeId))
+						return rechargeQB(data[i].TargetAccount, strconv.Itoa(data[i].BuyAmount), strconv.Itoa(data[i].TradeId))
 					} else {
-						return rechargeDNF(data[i].TargetAccount, wxSecret, strconv.Itoa(data[i].BuyAmount*100), strconv.Itoa(data[i].TradeId))
+						return rechargeDNF(data[i].TargetAccount, strconv.Itoa(data[i].BuyAmount*100), strconv.Itoa(data[i].TradeId))
 					}
 				}()
 				if code == "200" {
@@ -187,29 +195,28 @@ func f() error {
 	return nil
 }
 
-const (
-	keyBack = "input keyevent 4"
-)
-
 //input tap 100 700  q币账号
-func rechargeQB(account, secret, money, orderId string) (string, string) {
+func rechargeQB(account, money, orderId string) (string, string) {
 	fmt.Println("充值QB")
 	begin := time.Now().Unix()
 	//
-	clickEmpty := "input tap 168 952"
+	clickEmpty := "input tap 168 650"
 	oneAccount := "input tap 680 700 "
 	inputAccount := "input text " + account
-	clickMoney := "input tap 600 900"
+	clickMoney := "input tap 600 920"
 	inputMoney := "input text " + money
 	clickPay := "input tap 600 1100"
-	inputSecret := "input text " + secret
 	fileName := orderId + ".png"
 	//
+	execCommandRun(oneAccount)
 	execCommandRun(oneAccount)
 	execCommandRun(oneAccount)
 	execCommandRun(inputAccount)
 	execCommandRun(clickEmpty)
 	execCommandRun(clickMoney)
+	for i := 0; i < 4; i++ {
+		execCommandRun("input keyevent 67")
+	}
 	execCommandRun(inputMoney)
 	execCommandRun(clickEmpty)
 	execCommandRun(clickPay)
@@ -222,7 +229,7 @@ func rechargeQB(account, secret, money, orderId string) (string, string) {
 }
 
 //
-func rechargeDNF(account, secret, money, orderId string) (string, string) {
+func rechargeDNF(account, money, orderId string) (string, string) {
 	fmt.Println("充值DNF")
 	begin := time.Now().Unix()
 	//
@@ -233,7 +240,6 @@ func rechargeDNF(account, secret, money, orderId string) (string, string) {
 	clickMoney := "input tap 168 952"
 	inputMoney := "input text " + money
 	clickPay := "input tap 650 1452"
-	inputSecret := "input text " + secret
 	fileName := orderId + ".png"
 	//
 	execCommandRun(clickDnf)
@@ -265,7 +271,10 @@ func checkResult(fileName, account, orderId, money string, begin int64) (string,
 	res, err := execCommandSuccess(desImage)
 	if err == nil {
 		if strings.Contains(res, "支 付 成 功") {
-			for i := 0; i < 2; i++ {
+			execCommandRun(keyBack)
+			if isQB == 0 {
+				execCommandRun("input tap 500 902")
+			} else {
 				execCommandRun(keyBack)
 			}
 			log.Info("订单号:", orderId, "，耗时：", time.Now().Unix()-begin, "，充值账号：", account, "，充值金额：", money, "，处理成功")
@@ -274,6 +283,14 @@ func checkResult(fileName, account, orderId, money string, begin int64) (string,
 			log.Error("订单号:", orderId, "，耗时：", time.Now().Unix()-begin, "，充值账号：", account, "，充值金额：", money, "，错误信息：", "账号错误")
 			execCommandRun(keyBack)
 			return "202", "账号错误"
+		} else if strings.Contains(res, "你 已 在 当 前 商 户 支 付 过 一 笔 相 同 金 额") { // 继续执行
+			execCommandRun("input tap 600 900")
+			time.Sleep(3 * time.Second)
+			fmt.Println("开始支付")
+			execCommandRun(inputSecret)
+			//
+			time.Sleep(2 * time.Second)
+			return checkResult(fileName, account, orderId, money, begin)
 		} else {
 			log.Error("订单号:", orderId, "，耗时：", time.Now().Unix()-begin, "，充值账号：", account, "，充值金额：", money, "，错误信息：", res)
 			execCommandRun(keyBack)
