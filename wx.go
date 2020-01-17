@@ -30,7 +30,7 @@ func main() {
 	} else {
 		log.Info("failed to log to file")
 	}
-	tk := toolbox.NewTask("tk", "0/2 * * * * ?", f)
+	tk := toolbox.NewTask("tk", "0/5 * * * * ?", f)
 	toolbox.AddTask("tk", tk)
 	ui.Main(setUp)
 }
@@ -38,7 +38,7 @@ func main() {
 //
 func setUp() {
 	// 初始化窗口
-	mainwin := ui.NewWindow("挂机软件", 640, 480, false)
+	mainwin := ui.NewWindow("挂机软件V0.0.1.beta", 640, 480, false)
 	mainwin.OnClosing(func(*ui.Window) bool {
 		ui.Quit()
 		return true
@@ -50,7 +50,7 @@ func setUp() {
 
 	//tab
 	tab := ui.NewTab()
-	tab.Append("DNF", makeControl(mainwin))
+	tab.Append("QB/DNF", makeControl(mainwin))
 	tab.SetMargined(0, true)
 	// tab.Append("第二页", newBox())
 	// tab.SetMargined(1, true)
@@ -75,6 +75,8 @@ func makeControl(w *ui.Window) ui.Control {
 	requestButton := ui.NewButton("开始接单")
 	entryForm.Append("", requestButton, false)
 	//
+	choose := ui.NewCheckbox("是DNF")
+	entryForm.Append("类型", choose, false)
 	supInput := ui.NewEntry()
 	entryForm.Append("SUP商户号", supInput, false)
 	supSecretInput := ui.NewEntry()
@@ -113,7 +115,7 @@ func makeControl(w *ui.Window) ui.Control {
 		if len(orderId) == 0 {
 			orderId = "123123123"
 		}
-		go rechargeDNF(account, secret, money, orderId)
+		go rechargeQB(account, secret, money, orderId)
 
 	})
 	//
@@ -133,7 +135,6 @@ func makeControl(w *ui.Window) ui.Control {
 			//
 			toolbox.StartTask()
 			requestButton.SetText("停止接单")
-
 		}
 	})
 	return hbox
@@ -146,10 +147,10 @@ func f() error {
 		fmt.Println("请求数据", data)
 		count := len(data)
 		for i := 0; i < count; i++ {
-			if strconv.Itoa(data[i].ProductId) == productId {
+			if strconv.Itoa(data[i].ProductId) == productId && isCanRequest {
 				isCanRequest = false
 				services.UpdateData(merchantId, key, strconv.Itoa(data[i].TradeId), "1", "处理中")
-				code, stateInfo := rechargeDNF(data[i].TargetAccount, wxSecret, strconv.Itoa(data[i].BuyAmount*100), strconv.Itoa(data[i].TradeId))
+				code, stateInfo := rechargeQB(data[i].TargetAccount, wxSecret, strconv.Itoa(data[i].BuyAmount*100), strconv.Itoa(data[i].TradeId))
 				if code == "200" {
 					services.UpdateData(merchantId, key, strconv.Itoa(data[i].TradeId), "2", stateInfo)
 				} else {
@@ -165,37 +166,27 @@ func f() error {
 	return nil
 }
 
+const (
+	keyBack = "input keyevent 4"
+)
+
 //input tap 100 700  q币账号
-//
-func rechargeDNF(account, secret, money, orderId string) (string, string) {
+func rechargeQB(account, secret, money, orderId string) (string, string) {
+	fmt.Println("充值QB")
 	begin := time.Now().Unix()
 	//
-	clickEmpty := "input tap 168 852"
-	clickDnf := "input tap 10 1400"
-	//clickAccount := "input tap 300 440 "
-	//deleteAccount := "input keyevent --longpress 67 "
-	oneAccount := "input tap 680 400 "
+	clickEmpty := "input tap 168 952"
+	oneAccount := "input tap 680 700 "
 	inputAccount := "input text " + account
-	clickMoney := "input tap 168 952"
+	clickMoney := "input tap 600 900"
 	inputMoney := "input text " + money
-	clickPay := "input tap 650 1452"
+	clickPay := "input tap 600 1100"
 	inputSecret := "input text " + secret
-	keyBack := "input keyevent 4"
 	fileName := orderId + ".png"
-	screencapImage := "screencap -p /data/local/tmp/" + fileName
-	copyImage := "/data/local/tmp/" + fileName
-	desImage := "./images/" + fileName
 	//
-	execCommandRun(clickDnf)
-	time.Sleep(time.Second)
 	execCommandRun(oneAccount)
 	execCommandRun(oneAccount)
-	//for i := 0; i <= len(account)/2; i++ {
-	//	execCommandRun(deleteAccount)
-	//	// robotgo.KeyTap("del")
-	//}
 	execCommandRun(inputAccount)
-	// robotgo.TypeString(account)
 	execCommandRun(clickEmpty)
 	execCommandRun(clickMoney)
 	execCommandRun(inputMoney)
@@ -206,6 +197,47 @@ func rechargeDNF(account, secret, money, orderId string) (string, string) {
 	execCommandRun(inputSecret)
 	//
 	time.Sleep(2 * time.Second)
+	return checkResult(fileName, account, orderId, money, begin)
+}
+
+//
+func rechargeDNF(account, secret, money, orderId string) (string, string) {
+	fmt.Println("充值DNF")
+	begin := time.Now().Unix()
+	//
+	clickEmpty := "input tap 168 852"
+	clickDnf := "input tap 10 1400"
+	oneAccount := "input tap 680 400 "
+	inputAccount := "input text " + account
+	clickMoney := "input tap 168 952"
+	inputMoney := "input text " + money
+	clickPay := "input tap 650 1452"
+	inputSecret := "input text " + secret
+	fileName := orderId + ".png"
+	//
+	execCommandRun(clickDnf)
+	time.Sleep(time.Second)
+	execCommandRun(oneAccount)
+	execCommandRun(oneAccount)
+	execCommandRun(inputAccount)
+	execCommandRun(clickEmpty)
+	execCommandRun(clickMoney)
+	execCommandRun(inputMoney)
+	execCommandRun(clickEmpty)
+	execCommandRun(clickPay)
+	time.Sleep(3 * time.Second)
+	fmt.Println("开始支付")
+	execCommandRun(inputSecret)
+	//
+	time.Sleep(2 * time.Second)
+	return checkResult(fileName, account, orderId, money, begin)
+}
+
+//
+func checkResult(fileName, account, orderId, money string, begin int64) (string, string) {
+	screencapImage := "screencap -p /data/local/tmp/" + fileName
+	copyImage := "/data/local/tmp/" + fileName
+	desImage := "./images/" + fileName
 	fmt.Println("截图认证")
 	execCommandRun(screencapImage)
 	execCommand(copyImage, desImage)
