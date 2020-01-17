@@ -20,6 +20,7 @@ var log = logrus.New()
 var merchantId, key, productId, wxSecret string
 
 var isCanRequest = true
+var isQB = 0
 
 //
 func main() {
@@ -75,8 +76,15 @@ func makeControl(w *ui.Window) ui.Control {
 	requestButton := ui.NewButton("开始接单")
 	entryForm.Append("", requestButton, false)
 	//
-	choose := ui.NewCheckbox("是DNF")
-	entryForm.Append("类型", choose, false)
+	// choose := ui.NewCheckbox("是DNF")
+	// entryForm.Append("类型", choose, false)
+	vbox := ui.NewVerticalBox()
+	choosed := ui.NewRadioButtons()
+	choosed.Append("QB")
+	choosed.Append("DNF")
+	vbox.Append(choosed, false)
+	entryForm.Append("类型", vbox, false)
+	//
 	supInput := ui.NewEntry()
 	entryForm.Append("SUP商户号", supInput, false)
 	supSecretInput := ui.NewEntry()
@@ -101,6 +109,7 @@ func makeControl(w *ui.Window) ui.Control {
 		secret := secretInput.Text()
 		money := moneyInput.Text()
 		orderId := orderIdInput.Text()
+		isQB = choosed.Selected()
 		if len(account) == 0 {
 			ui.MsgBoxError(w, "错误提示", "账号不能为空")
 			return
@@ -115,7 +124,11 @@ func makeControl(w *ui.Window) ui.Control {
 		if len(orderId) == 0 {
 			orderId = "123123123"
 		}
-		go rechargeQB(account, secret, money, orderId)
+		if isQB == 0 {
+			go rechargeQB(account, secret, money, orderId)
+		} else {
+			go rechargeDNF(account, secret, money, orderId)
+		}
 
 	})
 	//
@@ -132,6 +145,7 @@ func makeControl(w *ui.Window) ui.Control {
 			key = supSecretInput.Text()
 			productId = productIdInput.Text()
 			wxSecret = secretInput.Text()
+			isQB = choosed.Selected()
 			//
 			toolbox.StartTask()
 			requestButton.SetText("停止接单")
@@ -150,7 +164,14 @@ func f() error {
 			if strconv.Itoa(data[i].ProductId) == productId && isCanRequest {
 				isCanRequest = false
 				services.UpdateData(merchantId, key, strconv.Itoa(data[i].TradeId), "1", "处理中")
-				code, stateInfo := rechargeQB(data[i].TargetAccount, wxSecret, strconv.Itoa(data[i].BuyAmount*100), strconv.Itoa(data[i].TradeId))
+
+				code, stateInfo := func() (string, string) {
+					if isQB == 0 {
+						return rechargeQB(data[i].TargetAccount, wxSecret, strconv.Itoa(data[i].BuyAmount*100), strconv.Itoa(data[i].TradeId))
+					} else {
+						return rechargeDNF(data[i].TargetAccount, wxSecret, strconv.Itoa(data[i].BuyAmount*100), strconv.Itoa(data[i].TradeId))
+					}
+				}()
 				if code == "200" {
 					services.UpdateData(merchantId, key, strconv.Itoa(data[i].TradeId), "2", stateInfo)
 				} else {
