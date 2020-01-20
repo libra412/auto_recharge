@@ -127,9 +127,9 @@ func makeControl(w *ui.Window) ui.Control {
 			orderId = "123123123"
 		}
 		if isQB == 0 {
-			go rechargeQB(account, money, orderId)
+			go rechargeQB2(account, money, orderId)
 		} else {
-			go rechargeDNF(account, money+"00", orderId)
+			go rechargeDNF2(account, money+"00", orderId)
 		}
 
 	})
@@ -175,9 +175,9 @@ func f() error {
 
 				code, stateInfo := func() (string, string) {
 					if isQB == 0 {
-						return rechargeQB(data[i].TargetAccount, strconv.Itoa(data[i].BuyAmount), strconv.Itoa(data[i].TradeId))
+						return rechargeQB2(data[i].TargetAccount, strconv.Itoa(data[i].BuyAmount), strconv.Itoa(data[i].TradeId))
 					} else {
-						return rechargeDNF(data[i].TargetAccount, strconv.Itoa(data[i].BuyAmount*100), strconv.Itoa(data[i].TradeId))
+						return rechargeDNF2(data[i].TargetAccount, strconv.Itoa(data[i].BuyAmount*100), strconv.Itoa(data[i].TradeId))
 					}
 				}()
 				if code == "200" {
@@ -196,31 +196,28 @@ func f() error {
 	return nil
 }
 
-//input tap 100 700  q币账号
-func rechargeQB(account, money, orderId string) (string, string) {
-	fmt.Println("充值QB")
+//
+var commandsQB = []string{"input roll 100 100", "input tap 1000 920", "input tap 1000 920", "input tap 1000 920", "inputAccount", "input tap 1000 1200",
+	"input tap 1000 1200", "input keyevent --longpress 67", " input keyevent --longpress 67", "inputMoney", "input tap 900 950"}
+
+var commandsOppoQB = []string{"input tap 680 700", "input tap 600 920", "input tap 600 1100", "input tap 168 650"}
+
+//
+func rechargeQB2(account, money, orderId string) (string, string) {
+	fmt.Println("充值QB2")
 	begin := time.Now().Unix()
-	//
-	clickEmpty := "input tap 168 650"
-	oneAccount := "input tap 680 700 "
-	inputAccount := "input text " + account
-	clickMoney := "input tap 600 920"
-	inputMoney := "input text " + money
-	clickPay := "input tap 600 1100"
 	fileName := orderId + ".png"
-	//
-	execCommandRun(oneAccount)
-	execCommandRun(oneAccount)
-	execCommandRun(oneAccount)
-	execCommandRun(inputAccount)
-	execCommandRun(clickEmpty)
-	execCommandRun(clickMoney)
-	for i := 0; i < 4; i++ {
-		execCommandRun("input keyevent 67")
+	count := len(commandsQB)
+	for i := 0; i < count; i++ {
+		cmd := commandsQB[i]
+		if cmd == "inputAccount" {
+			cmd = "input text " + account
+		} else if cmd == "inputMoney" {
+			cmd = "input text " + money
+		}
+		execCommandRun(cmd)
+		time.Sleep(time.Second)
 	}
-	execCommandRun(inputMoney)
-	execCommandRun(clickEmpty)
-	execCommandRun(clickPay)
 	time.Sleep(3 * time.Second)
 	fmt.Println("开始支付")
 	execCommandRun(inputSecret)
@@ -230,6 +227,35 @@ func rechargeQB(account, money, orderId string) (string, string) {
 }
 
 //
+var commandsDNF = []string{"input roll 100 100", "input tap 80 1800", "input tap 1000 600", "input tap 1000 600", "inputAccount", "input tap 1000 400",
+	"input tap 100 1400", "inputMoney", "input tap 900 1100"}
+
+//
+func rechargeDNF2(account, money, orderId string) (string, string) {
+	fmt.Println("充值DNF2")
+	begin := time.Now().Unix()
+	fileName := orderId + ".png"
+	count := len(commandsDNF)
+	for i := 0; i < count; i++ {
+		cmd := commandsDNF[i]
+		if cmd == "inputAccount" {
+			cmd = "input text " + account
+		} else if cmd == "inputMoney" {
+			cmd = "input text " + money
+		}
+		execCommandRun(cmd)
+		time.Sleep(time.Second)
+	}
+	time.Sleep(3 * time.Second)
+	fmt.Println("开始支付")
+	execCommandRun(inputSecret)
+	//
+	time.Sleep(2 * time.Second)
+	return checkResult(fileName, account, orderId, money, begin)
+
+}
+
+/*
 func rechargeDNF(account, money, orderId string) (string, string) {
 	fmt.Println("充值DNF")
 	begin := time.Now().Unix()
@@ -259,7 +285,7 @@ func rechargeDNF(account, money, orderId string) (string, string) {
 	//
 	time.Sleep(2 * time.Second)
 	return checkResult(fileName, account, orderId, money, begin)
-}
+}*/
 
 //
 func checkResult(fileName, account, orderId, money string, begin int64) (string, string) {
