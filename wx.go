@@ -227,8 +227,8 @@ func rechargeQB2(account, money, orderId string) (string, string) {
 }
 
 //
-var commandsDNF = []string{"input roll 100 100", "input tap 80 1800", "input tap 1000 600", "input tap 1000 600", "inputAccount", "input tap 1000 400",
-	"input tap 100 1400", "inputMoney", "input tap 900 1100"}
+var commandsDNF = []string{"input roll 100 100", "clickDNF", "input tap 1000 600", "input tap 1000 600", "inputAccount",
+	"input tap 1000 400", "input tap 100 1400", "inputMoney", "input tap 900 1100"}
 
 //
 func rechargeDNF2(account, money, orderId string) (string, string) {
@@ -242,8 +242,13 @@ func rechargeDNF2(account, money, orderId string) (string, string) {
 			cmd = "input text " + account
 		} else if cmd == "inputMoney" {
 			cmd = "input text " + money
+		} else if cmd == "clickDNF" {
+			cmd = "input tap 80 1800"
 		}
 		execCommandRun(cmd)
+		if cmd == "clickDNF" {
+			time.Sleep(time.Second)
+		}
 		time.Sleep(time.Second)
 	}
 	time.Sleep(3 * time.Second)
@@ -300,7 +305,7 @@ func checkResult(fileName, account, orderId, money string, begin int64) (string,
 		if strings.Contains(res, "支 付 成 功") {
 			execCommandRun(keyBack)
 			if isQB == 0 {
-				execCommandRun("input tap 500 902")
+				execCommandRun("input tap 500 1200")
 			} else {
 				execCommandRun(keyBack)
 			}
@@ -310,8 +315,8 @@ func checkResult(fileName, account, orderId, money string, begin int64) (string,
 			log.Error("订单号:", orderId, "，耗时：", time.Now().Unix()-begin, "，充值账号：", account, "，充值金额：", money, "，错误信息：", "账号错误")
 			execCommandRun(keyBack)
 			return "202", "账号错误"
-		} else if strings.Contains(res, "你 已 在 当 前 商 户 支 付 过 一 笔 相 同 金 额") { // 继续执行
-			execCommandRun("input tap 600 900")
+		} else if strings.Contains(res, "你 已 在 当 前 商 户 支 付 过 一 笔") { // 继续执行
+			execCommandRun("input tap 600 1100")
 			time.Sleep(3 * time.Second)
 			fmt.Println("开始支付")
 			execCommandRun(inputSecret)
