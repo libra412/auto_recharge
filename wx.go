@@ -182,6 +182,8 @@ func f() error {
 				}()
 				if code == "200" {
 					services.UpdateData(merchantId, key, strconv.Itoa(data[i].TradeId), "2", stateInfo)
+				} else if code == "203" {
+					services.UpdateData(merchantId, key, strconv.Itoa(data[i].TradeId), "4", stateInfo)
 				} else {
 					services.UpdateData(merchantId, key, strconv.Itoa(data[i].TradeId), "3", stateInfo)
 				}
@@ -254,49 +256,16 @@ func rechargeDNF2(account, money, orderId string) (string, string) {
 	time.Sleep(3 * time.Second)
 	fmt.Println("开始支付")
 	execCommandRun(inputSecret)
-	//
-	time.Sleep(2 * time.Second)
 	return checkResult(fileName, account, orderId, money, begin)
 
 }
-
-/*
-func rechargeDNF(account, money, orderId string) (string, string) {
-	fmt.Println("充值DNF")
-	begin := time.Now().Unix()
-	//
-	clickEmpty := "input tap 168 852"
-	clickDnf := "input tap 10 1400"
-	oneAccount := "input tap 680 400 "
-	inputAccount := "input text " + account
-	clickMoney := "input tap 168 952"
-	inputMoney := "input text " + money
-	clickPay := "input tap 650 1452"
-	fileName := orderId + ".png"
-	//
-	execCommandRun(clickDnf)
-	time.Sleep(time.Second)
-	execCommandRun(oneAccount)
-	execCommandRun(oneAccount)
-	execCommandRun(inputAccount)
-	execCommandRun(clickEmpty)
-	execCommandRun(clickMoney)
-	execCommandRun(inputMoney)
-	execCommandRun(clickEmpty)
-	execCommandRun(clickPay)
-	time.Sleep(3 * time.Second)
-	fmt.Println("开始支付")
-	execCommandRun(inputSecret)
-	//
-	time.Sleep(2 * time.Second)
-	return checkResult(fileName, account, orderId, money, begin)
-}*/
 
 //
 func checkResult(fileName, account, orderId, money string, begin int64) (string, string) {
 	screencapImage := "screencap -p /data/local/tmp/" + fileName
 	copyImage := "/data/local/tmp/" + fileName
 	desImage := "./images/" + fileName
+	time.Sleep(3 * time.Second)
 	fmt.Println("截图认证")
 	execCommandRun(screencapImage)
 	execCommand(copyImage, desImage)
@@ -320,8 +289,6 @@ func checkResult(fileName, account, orderId, money string, begin int64) (string,
 			time.Sleep(3 * time.Second)
 			fmt.Println("开始支付")
 			execCommandRun(inputSecret)
-			//
-			time.Sleep(2 * time.Second)
 			return checkResult(fileName, account, orderId, money, begin)
 		} else {
 			log.Error("订单号:", orderId, "，耗时：", time.Now().Unix()-begin, "，充值账号：", account, "，充值金额：", money, "，错误信息：", res)
