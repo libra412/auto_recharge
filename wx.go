@@ -199,8 +199,8 @@ func f() error {
 }
 
 //
-var commandsQB = []string{"input roll 100 100", "input tap 1000 920", "input tap 1000 920", "input tap 1000 920", "inputAccount", "input tap 1000 1200",
-	"input tap 1000 1200", "input keyevent --longpress 67", " input keyevent --longpress 67", "inputMoney", "input tap 900 950"}
+var commandsQB = []string{"input swipe 540 500 540 1300 100", "input tap 1000 1100", "input tap 1000 1100", "inputAccount", "input roll 100 100",
+	"input tap 1000 1200", "input keyevent --longpress 67", " input keyevent --longpress 67", "inputMoney", "input roll 100 100", "input tap 900 1400"}
 
 var commandsOppoQB = []string{"input tap 680 700", "input tap 600 920", "input tap 600 1100", "input tap 168 650"}
 
@@ -273,6 +273,7 @@ func checkResult(fileName, account, orderId, money string, begin int64) (string,
 	if err == nil {
 		if strings.Contains(res, "支 付 成 功") {
 			execCommandRun(keyBack)
+			time.Sleep(time.Second)
 			if isQB == 0 {
 				execCommandRun("input tap 500 1200")
 			} else {
@@ -282,7 +283,11 @@ func checkResult(fileName, account, orderId, money string, begin int64) (string,
 			return "200", "充值成功"
 		} else if strings.Contains(res, "温 馨 提 示") {
 			log.Error("订单号:", orderId, "，耗时：", time.Now().Unix()-begin, "，充值账号：", account, "，充值金额：", money, "，错误信息：", "账号错误")
-			execCommandRun(keyBack)
+			if isQB == 0 {
+				execCommandRun("input tap 500 1200")
+			} else {
+				execCommandRun(keyBack)
+			}
 			return "202", "账号错误"
 		} else if strings.Contains(res, "你 已 在 当 前 商 户 支 付 过 一 笔") { // 继续执行
 			execCommandRun("input tap 600 1100")
