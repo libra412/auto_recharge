@@ -185,6 +185,7 @@ func f() error {
 				} else {
 					services.UpdateData(merchantId, key, strconv.Itoa(data[i].TradeId), "3", stateInfo)
 				}
+				time.Sleep(time.Second)
 				isCanRequest = true
 				break
 			}
