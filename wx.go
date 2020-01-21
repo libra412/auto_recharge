@@ -44,7 +44,7 @@ func main() {
 //
 func setUp() {
 	// 初始化窗口
-	mainwin := ui.NewWindow("挂机软件V0.0.1.beta", 640, 480, false)
+	mainwin := ui.NewWindow("挂机软件V0.0.2.beta", 640, 480, false)
 	mainwin.OnClosing(func(*ui.Window) bool {
 		ui.Quit()
 		return true
@@ -122,6 +122,7 @@ func makeControl(w *ui.Window) ui.Control {
 		}
 		if len(money) == 0 {
 			ui.MsgBoxError(w, "错误提示", "金额不能为空")
+			return
 		}
 		if len(orderId) == 0 {
 			orderId = "123123123"
@@ -148,6 +149,14 @@ func makeControl(w *ui.Window) ui.Control {
 			productId = productIdInput.Text()
 			wxSecret := secretInput.Text()
 			isQB = choosed.Selected()
+			if len(merchantId) == 0 {
+				ui.MsgBoxError(w, "错误提示", "商户号不能为空")
+				return
+			}
+			if len(key) == 0 {
+				ui.MsgBoxError(w, "错误提示", "商户密码不能为空")
+				return
+			}
 			if len(wxSecret) == 0 {
 				ui.MsgBoxError(w, "错误提示", "微信密码不能为空")
 				return
@@ -271,17 +280,18 @@ func checkResult(fileName, account, orderId, money string, begin int64) (string,
 	execCommand(copyImage, desImage)
 	res, err := execCommandSuccess(desImage)
 	if err == nil {
-		if strings.Contains(res, "支 付 成 功") {
+		if strings.Contains(res, "支 付 成 功") || strings.Contains(res, "支付成功") {
 			execCommandRun(keyBack)
 			time.Sleep(time.Second)
+			fmt.Println("点击返回首页")
 			if isQB == 0 {
-				execCommandRun("input tap 500 1200")
+				execCommandRun("input tap 500 1250")
 			} else {
 				execCommandRun(keyBack)
 			}
 			log.Info("订单号:", orderId, "，耗时：", time.Now().Unix()-begin, "，充值账号：", account, "，充值金额：", money, "，处理成功")
 			return "200", "充值成功"
-		} else if strings.Contains(res, "温 馨 提 示") {
+		} else if strings.Contains(res, "温 馨 提 示") || strings.Contains(res, "温馨提示") {
 			log.Error("订单号:", orderId, "，耗时：", time.Now().Unix()-begin, "，充值账号：", account, "，充值金额：", money, "，错误信息：", "账号错误")
 			if isQB == 0 {
 				execCommandRun("input tap 500 1200")
