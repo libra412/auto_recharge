@@ -13,20 +13,8 @@ import (
 
 var log = logrus.New()
 
-var (
-	keyBack     = "input keyevent 4"
-	inputSecret = "input text 000000"
-)
-
 //
 func main() {
-	// log.Out = os.Stdout //日志标准输出
-	// file, err := os.OpenFile("logs/wx.log", os.O_CREATE|os.O_WRONLY, 1)
-	// if err == nil {
-	// 	log.Out = file
-	// } else {
-	// 	log.Info("failed to log to file")
-	// }
 	tk := toolbox.NewTask("tk", "0 * * * * ?", f)
 	toolbox.AddTask("tk", tk)
 	ui.Main(setUp)
